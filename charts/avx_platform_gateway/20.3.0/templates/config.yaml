@@ -1,0 +1,15 @@
+{{- $root := . -}}
+{{- $dot := . }}
+{{- range $key, $value := $dot.Values.common.namespace }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $dot.Values.appviewx.moduleconfig }}
+  namespace: {{ $value }}
+data:
+  MODULE_NAME: {{ $dot.Values.appviewx.moduleconfig }}
+  PROFILE_JSON: |-
+{{ $root.Files.Get $dot.Values.appviewx.profilepath | indent 4 }}
+{{- end }}
+

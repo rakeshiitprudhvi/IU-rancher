@@ -1,0 +1,30 @@
+# Commons
+
+common:
+  namespace: 
+    - avx
+  config: avx-common-config
+
+appviewx:
+  create: true
+  moduleconfig: avx-platform-gateway-config
+  replicas: 1
+  registryurl: ""
+  installation_user: "centos"
+  installation_user_id: "1000"  
+  appviewx_path: "/home/centos/appviewx/"
+  appname: 
+    - avx-platform-gateway:5300:5300:ClusterIP:20.3.0.0
+  profileremotepath: /appviewx/profiles/
+  mountpath: /appviewx/dependencies/
+  profilepath: profile/avxgw-profile.json
+  cpuRequest: "1000m"
+  memoryRequest: "1024Mi"
+  multi: "false"
+  external_system: "true"
+
+image:
+  registry: gcr.io
+  repository: gcp-gke-cluster-poc/avx-cloud-gateway
+  tag: 2020.3.0-gcp
+

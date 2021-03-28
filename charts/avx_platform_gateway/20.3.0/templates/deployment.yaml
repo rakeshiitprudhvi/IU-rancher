@@ -1,0 +1,88 @@
+{{- $dot := . }}
+{{ if $dot.Values.appviewx.create -}}
+{{- range .Values.appviewx.appname }}
+{{- $appname_port_version := split ":" . }}
+{{- range $key, $value := $dot.Values.common.namespace }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ $appname_port_version._0 }}
+  name: {{ $appname_port_version._0 }}
+  namespace: {{ $value }}
+spec:
+  ports:
+  - name: default 
+    port: {{ $appname_port_version._1 }}
+    protocol: TCP
+    targetPort: {{ $appname_port_version._2 }}
+  selector:
+    app: {{ $appname_port_version._0 }}
+  type: {{ $appname_port_version._3 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ $appname_port_version._0 }}
+  name: {{ $appname_port_version._0 }}
+  namespace: {{ $value }}
+spec:
+  replicas: {{$dot.Values.appviewx.replicas}}
+  selector:
+    matchLabels:
+      app: {{ $appname_port_version._0 }}
+  template:
+    metadata:
+      labels:
+        app: {{ $appname_port_version._0 }}
+        version: {{ $appname_port_version._4 }}
+      annotations:
+        timestamp: "{{ $dot.Values.timestamp }}"
+        traffic.sidecar.istio.io/excludeInboundPorts: "5301,5302"
+    spec:
+      volumes:
+      - name: logs-pv-storage
+        persistentVolumeClaim:
+          claimName: logs-pv-claim
+      - name: avx-properties-path
+        configMap:
+          name: {{ $dot.Values.common.config }}
+          items:
+          - key: appviewx.properties
+            path: appviewx.properties
+      - name: profile
+        configMap:
+          name: {{ $dot.Values.appviewx.moduleconfig }}
+      containers:
+      - image: gcr.io/gcp-gke-cluster-poc/appviewx/avx-cloud-gateway:2020.3.0
+        command: ["/bin/sh","-c"]
+        args: ["useradd -u {{ $dot.Values.appviewx.installation_user_id }} {{ $dot.Values.appviewx.installation_user }} \
+                && chmod -R 777 ${DEPENDENCY_PATH}/logs/ \
+                && su  {{ $dot.Values.appviewx.installation_user }} -s /bin/bash -c \"/appviewx/{{ $appname_port_version._0 | replace "-" "_" }}/avxgw -p {{ $dot.Values.appviewx.profileremotepath }}/PROFILE_JSON \" "]
+        imagePullPolicy: IfNotPresent
+        envFrom:
+        # The ConfigMap we want to use
+        - configMapRef:
+            name: {{ $dot.Values.common.config }}
+        - configMapRef:
+            name: {{ $dot.Values.appviewx.moduleconfig }}
+        name: {{ $appname_port_version._0 }}
+        resources:
+          requests:
+            memory: {{ $dot.Values.appviewx.memoryRequest }}
+        volumeMounts:
+        - mountPath: "{{ $dot.Values.appviewx.mountpath }}/logs"
+          name: logs-pv-storage
+        - mountPath: {{ $dot.Values.appviewx.profileremotepath }}
+          name: profile
+          readOnly: true
+        - name: avx-properties-path
+          mountPath: /appviewx/dependencies/properties/appviewx.properties
+          subPath: appviewx.properties
+      restartPolicy: Always
+
+{{- end }}
+{{- end }}
+{{ end -}}

@@ -1,0 +1,29 @@
+{{- $dot := . }}
+{{- if eq $dot.Values.appviewx.external_system "true" }}
+{{ if $dot.Values.appviewx.create -}}
+{{- range .Values.appviewx.appname }}
+{{- $appname_port_version := split ":" . }}
+{{- range $key, $value := $dot.Values.common.namespace }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ $appname_port_version._0 }}
+  name: avx-platform-gateway-est
+  namespace: {{ $value }}
+spec:
+  ports:
+  - name: avx-gw-est
+    port: 5301
+    protocol: TCP
+    targetPort: 5301
+  selector:
+    app: {{ $appname_port_version._0 }}
+  type: LoadBalancer
+  externalTrafficPolicy: Local
+{{- end }}
+{{- end }}
+{{ end -}}  
+{{- end }}
+

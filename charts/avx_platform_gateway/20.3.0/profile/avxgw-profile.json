@@ -1,0 +1,73 @@
+{
+    "profiles": {
+        "DEFAULT": {
+            "enable_this_profile": true,
+            "operation_mode": "gateway",
+            "apis": [
+                "*"
+            ],
+            "port": "5300",
+            "protocol": "http",
+            "enable_client_cert_auth": false
+        },
+        "MTLS": {
+            "enable_this_profile": true,
+            "operation_mode": "gateway",
+            "apis": [
+                "*"
+            ],
+            "port": "5301",
+            "protocol": "https",
+            "server_cert_filepath": {
+                "cert": "/appviewx/dependencies/properties/appviewx.onpremise.com.crt",
+                "cert_key": "/appviewx/dependencies/properties/appviewx.onpremise.com.key"
+            },
+            "enable_client_cert_auth": true,
+            "client_cert_auth_ca_filepath": "/appviewx/dependencies/properties/client_auth_ca_certs/default_inter.crt,/appviewx/dependencies/properties/client_auth_ca_certs/default_root.crt",
+            "client_cert_check_exclusion": "/.well-known/est/cacerts,/.well-known/est/:agentSettingName/cacerts,/.well-known/est/simpleenroll,/.well-known/est/:agentSettingName/simpleenroll,/.well-known/est/simplereenroll,/.well-known/est/:agentSettingName/simplereenroll"
+        },
+        "HTTP-GATEWAY": {
+            "enable_this_profile": true,
+            "operation_mode": "gateway",
+            "apis": [
+                "scep/:agentSettingName",
+                "scep/:agentSettingName/pkiclient.exe",
+                "intune-scep/:agentSettingName/pkiclient.exe",
+                "intune-scep/:agentSettingName/cgi-bin/pkiclient.exe",
+                "controller/avxcrl",
+                "controller/avxocsp",
+                "controller/*Web*/crl.do"
+            ],
+            "port": "5302",
+            "protocol": "http",
+            "enable_client_cert_auth": false
+        }
+    },
+    "common_props": {
+        "client_cert_filepath": {
+            "cert": "",
+            "cert_key": "",
+            "ca": ""
+        },
+        "apis": [],
+        "logger": {
+            "log_filepath": "/appviewx/dependencies/logs",
+            "log_debug_maxsize": 20000000,
+            "log_debug_maxbackupduration_in_days": 5,
+            "log_level": "INFO" 
+        },
+        "cron": {
+            "refresh_session": "00 */1 * * * *",
+            "refresh_event_registry": "0 */1 * * * *",
+            "refresh_role": "0 */5 * * * *"
+        },
+        "ssl_ciphers": "modern",
+        "default_data_center": "absecon",
+        "default_svc_timeout": 900000,
+        "default_stream_svc_timeout": 1200000,
+        "gateway_error_threshold": 5,
+        "session_check_exclusion":  "/send-mail,/read-mail,/radius-user-aaa,acctmgmt-perform-login,platform-release-version-loginbanner,general-logging-syslog-listener,acctmgmt-perform-logout,acctmgmt-session-validate,cert-appviewx-crl-file-fetch,cert-appviewx-crl-file-access-distribution-point,ca-appviewx-crl-file-fetch,crl.do,avxcrl,avxocsp,map-default-client-cert-to-device,misc-update-device-status-message,get-event-registry,platform-sso-config-check,platform-perform-sso-login,platform-slo-request-evaluator,visualworkflow-email-approval,directory,:agentSettingName/acme/new-nonce,:agentSettingName/acme/new-account,:agentSettingName/acme/acct/:accountId,:agentSettingName/acme/new-order,:agentSettingName/acme/authz/:authId,:agentSettingName/acme/authz/:authorizationId/:challengeType,:agentSettingName/acme/order/:orderId/finalize,:agentSettingName/acme/cert/:orderId,:agentSettingName/acme/revoke-cert,:agentSettingName/acme/order/:orderId,:agentSettingName/acme/directory,est-get-cacerts,est-cert-enrollment,est-cert-reenrollment,.well-known/est/cacerts,.well-known/est/:agentSettingName/cacerts,.well-known/est/simpleenroll,.well-known/est/:agentSettingName/simpleenroll,.well-known/est/simplereenroll,.well-known/est/:agentSettingName/simplereenroll,platform-direct-event-record,connectedplatform-api-usage-listener,general-logging-forward-log-checker,platform-session-uncache,adc-syslog-parser,general-syslog-parser,scep/:agentSettingName,scep/:agentSettingName/pkiclient.exe,cert-scep,intune-scep/:agentSettingName/pkiclient.exe,intune-scep/:agentSettingName/cgi-bin/pkiclient.exe,intune-scep,controller/avxcrl,controller/avxocsp,controller/*Web*/crl.do",
+        "registered_vms": "avx-commons.avx.svc.cluster.local:5201,avx-config-server.avx.svc.cluster.local:5401,avx-platform-core.avx.svc.cluster.local:5202,avx-platform-queue.avx.svc.cluster.local:5402,avx-subsystems.avx.svc.cluster.local:6601,avx-subsystems-sync.avx.svc.cluster.local:6601,avx-vendors.avx.svc.cluster.local:6701,avx-crontab.avx.svc.cluster.local:5402,avx-vendor-cert-scep-agent.avx.svc.cluster.local:5312,avx-vendor-cert-acme-agent.avx.svc.cluster.local:5302,avx-vendor-cert-intune-agent.avx.svc.cluster.local:5309,avx-vendor-cert-est-agent.avx.svc.cluster.local:5306,avx-vendor-cert-network-discovery.avx.svc.cluster.local:5311",
+        "appviewx_property_path": "/appviewx/dependencies/properties/appviewx.properties"
+    }
+}
