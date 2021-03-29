@@ -1,0 +1,10 @@
+# Commons
+
+common:
+  namespace: avx
+
+appviewx:
+  mountpath: /appviewx/dependencies/
+  logsCapacityStorage: 5Gi
+  mongodbpassword: MONGO-DB-PASSWORD
+  mongokey: MONGO-KEY
