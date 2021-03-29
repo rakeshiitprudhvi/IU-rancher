@@ -1,0 +1,8 @@
+# Commons
+
+common:
+  namespace: avx
+
+appviewx:
+  logsCapacityStorage: 10Gi
+  mountpath: /home
