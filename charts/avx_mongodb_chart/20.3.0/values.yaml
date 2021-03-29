@@ -1,0 +1,48 @@
+# Commons
+
+common:
+  namespace: avx
+secretKey:
+  secretkeyname: mongo-key
+  secretdataname: mongodb-keyfile
+  keyfilelocation: keyfile/mongodb-keyfile
+  type: Opaque
+  mongoInitUser: admin
+  mongoInitPass: MONGO-INIT-PASS
+## For creating the StorageClass and PV automatically for configDB:
+configDBStoragePV:
+  create: true
+  # Storage class details/as weel replicaset name
+  storageName: mongo-configdb
+  allowVolumeExpansion: true
+  reclaimPolicy: Retain
+  replicas: 3
+  # Pv details
+  persistentVolumeReclaimPolicy: Retain
+  capacityStorage: 10Gi
+
+
+## For creating the StorageClass and PV automatically for sharedDB:
+sharedDBStoragePV:
+  create: true
+  # Storage class details/as weel replicaset name
+  storageName: 
+    - mongo-shareddb
+  allowVolumeExpansion: true
+  reclaimPolicy: Retain
+  replicas: 3
+  # Pv details
+  persistentVolumeReclaimPolicy: Retain
+  capacityStorage: 25Gi
+
+routerDB:
+  storageName: mongo-routerdb
+  replicas: 3
+
+appviewx:
+  mountpath: /appviewx/dependencies/
+
+image:
+  registry: docker.io
+  repository: mongo
+  tag: latest

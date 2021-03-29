@@ -1,0 +1,9 @@
+{{- $dot := . }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ $dot.Values.common.namespace }}
+  labels:
+      istio-injection: enabled
+
+

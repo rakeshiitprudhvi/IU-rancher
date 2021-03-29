@@ -1,0 +1,159 @@
+{{- $dot := . }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $dot.Values.routerDB.storageName | lower  }}-service
+  namespace: {{ $dot.Values.common.namespace }}
+  labels:
+    name: {{ $dot.Values.routerDB.storageName | lower  }}
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+  clusterIP: None
+  selector:
+    app: {{ $dot.Values.routerDB.storageName | lower  }}
+  sessionAffinity: ClientIP   
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: router-init-script
+  namespace: {{ $dot.Values.common.namespace }}
+data:
+  init.sh: |
+    #!/bin/bash
+
+    if [[ "${HOSTNAME}" == 'mongo-routerdb-0' ]]; then
+      # wait for the readiness health check to pass
+      until ping -c 1 mongo-routerdb-0.mongo-routerdb-service; do
+        echo "waiting for DNS (mongo-routerdb-0.mongo-routerdb-service)..."
+        sleep 2
+      done
+
+      # wait until mongo-shareddb-0 DNS is available - this is required to add shard1 to router
+      until ping -c 1 mongo-shareddb-0.mongo-shareddb-service; do
+        echo "waiting for DNS (mongo-shareddb-0.mongo-shareddb-service)..."
+        sleep 2
+      done
+
+      until /usr/bin/mongo --quiet --eval 'db.getMongo()'; do
+        echo "waiting for local shell initiation..."
+        sleep 2
+      done
+      echo "local shell initiated"
+      
+      echo "adding sharddb to router"
+      /usr/bin/mongo --eval='printjson(sh.addShard("mongo-shareddb/mongo-shareddb-0.mongo-shareddb-service.{{ $dot.Values.common.namespace }}.svc.cluster.local:27017"))'
+
+      # wait until mongo-configdb-0 DNS is available - required to connect to check primary status
+      until ping -c 1 mongo-configdb-0.mongo-configdb-service; do
+        echo "waiting for DNS (mongo-configdb-0.mongo-configdb-service)..."
+        sleep 2
+      done
+      # wait until primary has been elected for the configdb - this is required for user creation
+      HOST=mongo-configdb-0.mongo-configdb-service:27017
+      FALSE_VAR="false"
+      ISMASTER=$(/usr/bin/mongo --host=${HOST} --quiet --eval 'printjson(rs.isMaster().ismaster)')
+      until "$ISMASTER" == "$FALSE_VAR"; do
+        echo "waiting for configdb-0 to get elected as master..."
+        ISMASTER=$(/usr/bin/mongo --host=${HOST} --quiet --eval 'printjson(rs.isMaster().ismaster)')
+        sleep 2
+      done
+      echo "configdb-0 elected as master"
+
+      echo "setting local user and password..."
+      /usr/bin/mongo --eval "db.getSiblingDB(\"admin\").createUser({user:\"${MONGO_INITDB_ROOT_USERNAME}\",pwd:\"${MONGO_INITDB_ROOT_PASSWORD}\",roles:[{role:\"root\",db:\"admin\"}]})"
+      echo "admin user created"
+    fi
+
+    echo "initialized"
+    sleep infinity
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $dot.Values.routerDB.storageName | lower  }}
+  namespace: {{ $dot.Values.common.namespace }}
+spec:
+  serviceName: {{ $dot.Values.routerDB.storageName | lower  }}-service
+  replicas: {{ $dot.Values.routerDB.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $dot.Values.routerDB.storageName | lower  }}
+  template:
+    metadata:
+      labels:
+        app: {{ $dot.Values.routerDB.storageName | lower  }}
+        tier: routers
+        replicaset: {{ $dot.Values.routerDB.storageName | lower  }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: replicaset
+                  operator: In
+                  values:
+                  - {{ $dot.Values.routerDB.storageName | lower  }}
+              topologyKey: kubernetes.io/hostname
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: {{ $dot.Values.routerDB.storageName | lower  }}-container
+          image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh","-c"]
+          args: 
+            - cp /data/mongodb-keyfile/key /root/key &&
+              chmod 0400 /root/key &&
+              numactl --interleave=all mongos --port 27017 --bind_ip 0.0.0.0 --configdb {{ `"` }}{{ printf "%s/" ($dot.Values.configDBStoragePV.storageName | lower) }}{{- range $i, $e := until ($dot.Values.configDBStoragePV.replicas | int) }}{{ printf "%s-%d.%s-service.%s.svc.cluster.local:27017" ($dot.Values.configDBStoragePV.storageName | lower) ($i) ($dot.Values.configDBStoragePV.storageName | lower) ($dot.Values.common.namespace) }}{{- if ne $i (sub ($dot.Values.configDBStoragePV.replicas | int) 1) }}{{ printf "," }}{{- end }}{{ end -}}{{`"`}} --clusterAuthMode keyFile --keyFile /root/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-router.log
+          resources:
+            requests:
+              cpu: 0.25
+              memory: 512Mi
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongodb-keyfile
+              mountPath: /data/mongodb-keyfile
+            - mountPath: "{{ $dot.Values.appviewx.mountpath }}/logs"
+              name: logs-pv-storage
+        - name: init-mongo
+          image: gcr.io/gcp-gke-cluster-poc/mongo-init:latest
+          imagePullPolicy: IfNotPresent
+          command:
+          - bash
+          - /config/init.sh
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $dot.Values.secretKey.secretkeyname }}
+                  key: mongo-init-user
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $dot.Values.secretKey.secretkeyname }}
+                  key: mongo-init-pass
+          volumeMounts:
+            - name: router-init-script
+              mountPath: /config    
+              
+      volumes:
+         - name: logs-pv-storage
+           emptyDir: {}
+         - name: mongodb-keyfile
+           secret:
+              secretName: {{ $dot.Values.secretKey.secretkeyname }}
+              items:
+                - key: mongodb-keyfile
+                  path: key
+                  mode: 256
+         - name: router-init-script
+           configMap:
+             name: router-init-script
+          
+

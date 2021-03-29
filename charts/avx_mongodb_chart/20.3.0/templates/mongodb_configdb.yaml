@@ -1,0 +1,156 @@
+{{- $dot := . }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $dot.Values.configDBStoragePV.storageName | lower  }}-service
+  namespace: {{ $dot.Values.common.namespace }}
+  labels:
+    name: {{ $dot.Values.configDBStoragePV.storageName | lower  }}
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+  clusterIP: None
+  selector:
+    app: {{ $dot.Values.configDBStoragePV.storageName | lower  }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: configdb-init-script
+  namespace: {{ $dot.Values.common.namespace }}
+data:
+  init.sh: |
+    #!/bin/bash
+    # wait for the readiness health check to pass
+    
+    if [[ "${HOSTNAME}" == 'mongo-configdb-0' ]]; then
+      until ping -c 1 mongo-configdb-0.mongo-configdb-service; do
+        echo "waiting for DNS (mongo-configdb-0.mongo-configdb-service)..."
+        sleep 2
+      done
+      until ping -c 1 mongo-configdb-1.mongo-configdb-service; do
+        echo "waiting for DNS (mongo-configdb-1.mongo-configdb-service)..."
+        sleep 2
+      done
+      until ping -c 1 mongo-configdb-2.mongo-configdb-service; do
+        echo "waiting for DNS (mongo-configdb-2.mongo-configdb-service)..."
+        sleep 2
+      done
+
+      until /usr/bin/mongo --quiet --eval 'printjson(db.getMongo())'; do
+        echo "waiting for local shell to be initiated..."
+        sleep 2
+      done
+      echo "local shell initiated"
+      
+      INIT=$(/usr/bin/mongo --username ${MONGO_INITDB_ROOT_USERNAME} --password ${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase "admin" --quiet --eval "printjson(rs.status().ok)")
+      if [ "$INIT" == 1 ]; then
+        echo "replica set already initialized"
+      else
+        echo "initializing replica set"
+        /usr/bin/mongo --eval="printjson(rs.initiate(\
+          {'_id': 'mongo-configdb', 'members': [{'_id': 0, 'host': 'mongo-configdb-0.mongo-configdb-service.{{ $dot.Values.common.namespace }}.svc.cluster.local:27017', 'priority': 1},{'_id': 1, 'host': 'mongo-configdb-1.mongo-configdb-service.{{ $dot.Values.common.namespace }}.svc.cluster.local:27017', 'priority': 0.5},{'_id': 2, 'host': 'mongo-configdb-2.mongo-configdb-service.{{ $dot.Values.common.namespace }}.svc.cluster.local:27017', 'priority': 0.5}]}))"
+      fi
+    fi
+    echo "initialized"
+    sleep infinity
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $dot.Values.configDBStoragePV.storageName | lower  }}
+  namespace: {{ $dot.Values.common.namespace }}
+spec:
+  serviceName: {{ $dot.Values.configDBStoragePV.storageName | lower  }}-service
+  replicas: {{ $dot.Values.configDBStoragePV.replicas }}
+  selector:
+    matchLabels:
+      app: {{ $dot.Values.configDBStoragePV.storageName | lower  }}
+  template:
+    metadata:
+      labels:
+        app: {{ $dot.Values.configDBStoragePV.storageName | lower  }}
+        tier: configdb
+        replicaset: {{ $dot.Values.configDBStoragePV.storageName | lower  }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: replicaset
+                  operator: In
+                  values:
+                  - {{ $dot.Values.configDBStoragePV.storageName | lower  }}
+              topologyKey: kubernetes.io/hostname
+      terminationGracePeriodSeconds: 10
+
+      containers:
+        - name: {{ $dot.Values.configDBStoragePV.storageName | lower  }}-container
+          imagePullPolicy: IfNotPresent
+          image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}
+          command: ["/bin/sh","-c"]
+          args: ["cp /data/mongodb-keyfile/key /root/key && chmod 0400 /root/key && numactl --interleave=all mongod --port 27017 --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 --configsvr --replSet {{ $dot.Values.configDBStoragePV.storageName | lower  }} --auth --clusterAuthMode keyFile --keyFile /root/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-configdb.log"]    
+          resources:
+            requests:
+              cpu: 0.25
+              memory: 512Mi
+          ports:
+            - containerPort: 27017
+
+          volumeMounts:
+              - name: mongodb-keyfile
+                mountPath: /data/mongodb-keyfile
+              - name: {{ $dot.Values.configDBStoragePV.storageName | lower  }}-persistent-storage-claim
+                mountPath: /data/configdb
+              - mountPath: "{{ $dot.Values.appviewx.mountpath }}/logs"
+                name: logs-pv-storage
+                
+        - name: init-mongo
+          image: gcr.io/gcp-gke-cluster-poc/mongo-init:latest
+          imagePullPolicy: IfNotPresent
+          command:
+          - bash
+          - /config/init.sh
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $dot.Values.secretKey.secretkeyname }}
+                  key: mongo-init-user
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $dot.Values.secretKey.secretkeyname }}
+                  key: mongo-init-pass
+          volumeMounts:
+            - name: configdb-init-script
+              mountPath: /config
+      
+      volumes:
+          - name: logs-pv-storage
+            emptyDir: {}
+          - name: mongodb-keyfile
+            secret:
+              secretName: {{ $dot.Values.secretKey.secretkeyname }}
+              items:
+                - key: mongodb-keyfile
+                  path: key
+                  mode: 256
+          - name: configdb-init-script
+            configMap:
+              name: configdb-init-script
+        
+
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ $dot.Values.configDBStoragePV.storageName | lower  }}-persistent-storage-claim
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ $dot.Values.configDBStoragePV.capacityStorage }}         

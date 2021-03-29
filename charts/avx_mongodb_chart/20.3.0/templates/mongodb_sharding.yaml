@@ -1,0 +1,162 @@
+{{- $dot := . }}
+{{- range $dot.Values.sharedDBStoragePV.storageName }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ . | lower }}-service
+  namespace: {{ $dot.Values.common.namespace }}
+  labels:
+    name: {{ . | lower }}
+spec:
+  ports:
+  - port: 27017
+    targetPort: 27017
+  clusterIP: None
+  selector:
+    app: {{ . | lower }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sharding-init-script
+  namespace: {{ $dot.Values.common.namespace }}
+data:
+  init.sh: |
+    #!/bin/bash
+   
+    if [[ "${HOSTNAME}" == 'mongo-shareddb-0' ]]; then
+      # wait for the readiness health check to pass
+      until ping -c 1 mongo-shareddb-0.mongo-shareddb-service; do
+        echo "waiting for DNS (mongo-shareddb-0.mongo-shareddb-service)..."
+        sleep 2
+      done
+      until ping -c 1 mongo-shareddb-1.mongo-shareddb-service; do
+        echo "waiting for DNS (mongo-shareddb-1.mongo-shareddb-service)..."
+        sleep 2
+      done
+      until ping -c 1 mongo-shareddb-2.mongo-shareddb-service; do
+        echo "waiting for DNS (mongo-shareddb-2.mongo-shareddb-service)..."
+        sleep 2
+      done
+      until /usr/bin/mongo --quiet --eval 'printjson(db.getMongo())'; do
+        echo "waiting for local shell initiation..."
+        sleep 2
+      done
+      echo "local shell initiated"
+      INIT=$(/usr/bin/mongo --username ${MONGO_INITDB_ROOT_USERNAME} --password ${MONGO_INITDB_ROOT_PASSWORD} --authenticationDatabase "admin" --quiet --eval "printjson(rs.status().ok)")
+      if [ "$INIT" == 1 ]; then
+        echo "replica set already initialized"
+      else
+        echo "initializing replica set"
+        /usr/bin/mongo --eval='printjson(rs.initiate({_id: "mongo-shareddb", version: 1, members: [ {_id: 0, host: "mongo-shareddb-0.mongo-shareddb-service.{{ $dot.Values.common.namespace }}.svc.cluster.local:27017"}, {_id: 1, host: "mongo-shareddb-1.mongo-shareddb-service.{{ $dot.Values.common.namespace }}.svc.cluster.local:27017"}, {_id: 2, host: "mongo-shareddb-2.mongo-shareddb-service.{{ $dot.Values.common.namespace }}.svc.cluster.local:27017"}]}))'
+
+        FALSE_VAR="false"
+        ISMASTER=$(/usr/bin/mongo --quiet --eval 'printjson(rs.isMaster().ismaster)')
+        until "$ISMASTER" == "$FALSE_VAR"; do
+          echo "waiting to get elected as master..."
+          ISMASTER=$(/usr/bin/mongo --quiet --eval 'printjson(rs.isMaster().ismaster)')
+          sleep 2
+        done
+
+        echo "setting local admin user for shard..."
+        /usr/bin/mongo --eval "db.getSiblingDB(\"admin\").createUser({user:\"${MONGO_INITDB_ROOT_USERNAME}\",pwd:\"${MONGO_INITDB_ROOT_PASSWORD}\",roles:[{role:\"root\",db:\"admin\"}]})"
+        echo "admin user creation command executed in shard"
+      fi
+    fi
+    echo "initialized"
+    sleep infinity
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ . | lower }}
+  namespace: {{ $dot.Values.common.namespace }}
+spec:
+  serviceName: {{ . | lower }}-service
+  replicas: {{ $dot.Values.sharedDBStoragePV.replicas }}
+  selector:
+    matchLabels:
+      app: {{ . | lower }}
+  template:
+    metadata:
+      labels:
+        app: {{ . | lower }}
+        tier: maindb
+        replicaset: {{ . | lower }}
+    spec:
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 100
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: replicaset
+                  operator: In
+                  values:
+                  - {{ . | lower }}
+              topologyKey: kubernetes.io/hostname
+      terminationGracePeriodSeconds: 10
+      containers:
+        - name: {{ . | lower }}-container
+          imagePullPolicy: IfNotPresent
+          image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}
+          command: ["/bin/sh","-c"]
+          args: ["cp /data/mongodb-keyfile/key /root/key && chmod 0400 /root/key && numactl --interleave=all mongod --port 27017 --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 --shardsvr --replSet {{ . | lower  }} --auth --clusterAuthMode keyFile --keyFile /root/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-shareddb.log"]
+          resources:
+            requests:
+              cpu: 0.25
+              memory: 512Mi
+          ports:
+            - containerPort: 27017
+          volumeMounts:
+            - name: mongodb-keyfile
+              mountPath: /data/mongodb-keyfile
+            - name: {{ . | lower }}-persistent-storage-claim
+              mountPath: /data/db
+            - mountPath: "{{ $dot.Values.appviewx.mountpath }}/logs"
+              name: logs-pv-storage
+        - name: init-mongo
+          image: gcr.io/gcp-gke-cluster-poc/mongo-init:latest
+          imagePullPolicy: IfNotPresent
+          command:
+          - bash
+          - /config/init.sh
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $dot.Values.secretKey.secretkeyname }}
+                  key: mongo-init-user
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ $dot.Values.secretKey.secretkeyname }}
+                  key: mongo-init-pass
+          volumeMounts:
+            - name: sharding-init-script
+              mountPath: /config              
+      volumes:
+         - name: logs-pv-storage
+           emptyDir: {}
+         - name: mongodb-keyfile
+           secret:
+              secretName: {{ $dot.Values.secretKey.secretkeyname }}
+              items:
+                - key: mongodb-keyfile
+                  path: key
+                  mode: 256
+         - name: sharding-init-script
+           configMap:
+             name: sharding-init-script          
+
+  volumeClaimTemplates:
+  - metadata:
+      name: {{ . | lower }}-persistent-storage-claim
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: {{ $dot.Values.sharedDBStoragePV.capacityStorage }}         
+{{- end }}

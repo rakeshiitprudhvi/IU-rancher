@@ -1,0 +1,23 @@
+# Commons
+
+common:
+  namespace: default
+  config: avx-common-config
+  appviewxnamespace: avx
+
+routerDB:
+  service: mongo-routerdb
+
+appviewx:
+  mongodseedname: mongoutil-mongoseed
+  mongodusername: admin
+  mongodpassword: mongo-db-password
+  masterNode: "master.onprem.avx.com"
+  mongodauth: admin
+  mountpath: /appviewx/dependencies/
+
+image:
+  registry: gcr.io
+  repository: gcp-gke-cluster-poc/avx-cloud-mongoseed
+  tag: 2020.3.0
+

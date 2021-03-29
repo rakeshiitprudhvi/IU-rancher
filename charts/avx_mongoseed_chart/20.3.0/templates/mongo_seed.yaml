@@ -1,0 +1,37 @@
+{{- $dot := . }}
+---      
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: {{ $dot.Values.appviewx.mongodseedname | lower }}
+  namespace: {{ $dot.Values.common.namespace }}
+spec:
+  template:
+    spec:
+      containers:
+      - name: {{ $dot.Values.appviewx.mongodseedname | lower }}
+        imagePullPolicy: IfNotPresent
+        image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}
+        command: ["/bin/bash","-c"]
+        args: ["mongorestore \
+                --host \
+                {{ $dot.Values.routerDB.service | lower }}-0.{{ $dot.Values.routerDB.service | lower }}-service.{{ $dot.Values.common.appviewxnamespace | lower }}.svc.cluster.local \
+                --username {{ $dot.Values.appviewx.mongodusername }} \
+                --password '{{ $dot.Values.appviewx.mongodpassword }}' \
+                --authenticationDatabase {{ $dot.Values.appviewx.mongodauth }} \
+                {{ $dot.Values.appviewx.mountpath }}/seed/ --drop --verbose 2> {{ $dot.Values.appviewx.mountpath }}/seed/db.log \
+                && \
+                  echo 'use appviewx' > /tmp/hostnameupdate.js  \
+                && \
+                  echo 'db.profile.update({ \"_id\" : \"hostname\"},{$set :{\"value\" : \"{{ $dot.Values.appviewx.masterNode }}\"}})' >> /tmp/hostnameupdate.js  \
+                && \
+                  echo 'db.logging.remove({\"devices\" : \"192.168.145.183\"})' >> /tmp/hostnameupdate.js  \
+                &&  \
+                mongo \
+                  --host \
+                  {{ $dot.Values.routerDB.service | lower }}-0.{{ $dot.Values.routerDB.service | lower }}-service.{{ $dot.Values.common.appviewxnamespace | lower }}.svc.cluster.local \
+                  --username {{ $dot.Values.appviewx.mongodusername }} \
+                  --password '{{ $dot.Values.appviewx.mongodpassword }}' \
+                  --authenticationDatabase {{ $dot.Values.appviewx.mongodauth }} < /tmp/hostnameupdate.js "]
+      restartPolicy: Never
+  backoffLimit: 4

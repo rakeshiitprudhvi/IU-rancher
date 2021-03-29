@@ -1,0 +1,13 @@
+{{- $root := . -}}
+{{- $dot := . }}
+apiVersion: v1
+kind: Secret
+metadata:
+  name: {{ $dot.Values.secretKey.secretkeyname }}
+  namespace: {{ $dot.Values.common.namespace }}
+type:  {{ $dot.Values.secretKey.type }}
+data:
+    mongo-init-user: {{ $dot.Values.secretKey.mongoInitUser | b64enc }}
+    mongo-init-pass: {{ $dot.Values.secretKey.mongoInitPass | b64enc }}
+    mongodb-keyfile: {{ $root.Files.Get $dot.Values.secretKey.keyfilelocation | b64enc }}
+
