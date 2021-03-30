@@ -122,7 +122,7 @@ spec:
             - mountPath: "{{ $dot.Values.appviewx.mountpath }}/logs"
               name: logs-pv-storage
         - name: init-mongo
-          image: gcr.io/gcp-gke-cluster-poc/mongo-init:latest
+          image: gcr.io/appviewxclm/appviewx/mongo-init:2020.3.0
           imagePullPolicy: IfNotPresent
           command:
           - bash
