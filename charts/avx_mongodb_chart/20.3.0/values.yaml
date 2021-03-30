@@ -8,7 +8,7 @@ secretKey:
   keyfilelocation: keyfile/mongodb-keyfile
   type: Opaque
   mongoInitUser: admin
-  mongoInitPass: MONGO-INIT-PASS
+  mongoInitPass: HkDNqtX8STdZnlFS
 ## For creating the StorageClass and PV automatically for configDB:
 configDBStoragePV:
   create: true
