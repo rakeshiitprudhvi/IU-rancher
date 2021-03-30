@@ -45,4 +45,4 @@ appviewx:
 image:
   registry: docker.io
   repository: mongo
-  tag: latest
+  tag: 4.2.8
