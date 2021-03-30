@@ -52,7 +52,7 @@ spec:
             path: appviewx.properties
       containers:
       - image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }} 
-        imagePullPolicy: Always
+        imagePullPolicy: IfNotPresent
         envFrom:
         # The ConfigMap we want to use
         - configMapRef:
