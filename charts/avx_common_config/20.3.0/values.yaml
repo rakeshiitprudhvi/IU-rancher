@@ -6,5 +6,5 @@ common:
 appviewx:
   mountpath: /appviewx/dependencies/
   logsCapacityStorage: 5Gi
-  mongodbpassword: MONGO-DB-PASSWORD
-  mongokey: MONGO-KEY
+  mongodbpassword: w4qmnrHm18/uudk+si9fHgRLdgU/sWFeRmZOPoXQ96M=
+  mongokey: o3nx09h95703joyyr0jvqhl6e
