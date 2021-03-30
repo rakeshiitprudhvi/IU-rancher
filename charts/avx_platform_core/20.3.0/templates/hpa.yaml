@@ -1,0 +1,31 @@
+{{- $dot := . }}
+{{ if $dot.Values.appviewx.create -}}
+{{- range .Values.appviewx.appname }}
+{{- $appname_port_version := split ":" . }}
+{{- range $key, $value := $dot.Values.common.namespace }}
+---
+apiVersion: autoscaling/v2beta1
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ $appname_port_version._0 }}
+  namespace: {{ $value }}
+spec:
+  maxReplicas: {{ $dot.Values.hpa.maxreplica }}
+  minReplicas: 1
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ $appname_port_version._0 }}
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      targetAverageUtilization: {{ $dot.Values.hpa.cputhreshold }}
+  - type: Resource
+    resource:
+      name: memory
+      targetAverageUtilization: {{ $dot.Values.hpa.memorythreshold }}    
+
+{{- end }}
+{{- end }}
+{{ end -}}

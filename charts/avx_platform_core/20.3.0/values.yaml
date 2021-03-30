@@ -7,18 +7,24 @@ common:
 
 appviewx:
   create: true
-  moduleconfig: avx-platform-queue-config
+  moduleconfig: avx-platform-core-config
   replicas: 1
   registryurl: ""
   installation_user: "appviewx"
   installation_user_id: "1000"
+  appviewx_base_image: "gcr.io/gcp-gke-cluster-poc/avx-cloud-managedservice:2020.3.0"
   appviewx_path: "/home/appviewx/appviewx/"
   appname: 
-    - avx-platform-queue:5402:8021:ClusterIP:20.3.0.0
+    - avx-platform-core:5202:8021:ClusterIP:20.3.0.0
   mountpath: /appviewx/dependencies/
-  cpuRequest: "1000m"
-  memoryRequest: "1024Mi"
+  cpuRequest: "500m"
+  memoryRequest: "500Mi"
   multi: "true"
+
+hpa:
+  cputhreshold: 400
+  memorythreshold: 300
+  maxreplica: 5
   
 probe:
    path: "/services/health/check"
@@ -35,5 +41,6 @@ health:
 image:
   registry: gcr.io
   repository: gcp-gke-cluster-poc/avx-cloud-managedservice
-  tag: 2020.3.0
+  tag: 2020.3.0    
+    
 
