@@ -1,0 +1,61 @@
+# Commons
+
+common:
+  namespace: 
+    - avx
+  config: avx-common-config
+
+appviewx:
+  create: true
+  moduleconfig: avx-subsystems-config
+  replicas: 1
+  registryurl: ""
+  installation_user: "appviewx"
+  installation_user_id: "1000"
+  appviewx_path: "/home/appviewx/appviewx/"
+  appname: 
+    - avx-subsystems:6601:8021:ClusterIP:20.3.0.0
+  appviewx_plugins:
+    - avx_subsystem_adc:20.3.0.0
+    - avx_subsystem_automation:20.3.0.0
+    - avx_subsystem_certificate:20.3.0.0
+    - avx_subsystem_ssh:20.3.0.0
+    - avx_subsystem_cloud:20.3.0.0
+    - avx_subsystem_security:20.3.0.0
+    - avx_subsystem_waf:20.3.0.0
+    - avx_subsystem_proxy:20.3.0.0
+    - avx_subsystem_router:20.3.0.0
+    - avx_subsystem_misc_devices:20.3.0.0
+    - avx_subsystem_switch:20.3.0.0 
+    - avx_subsystem_others:20.3.0.0 
+    - avx_subsystem_dns:20.2.0.0 
+    - avx_commons:20.3.0.0
+
+  mountpath: /appviewx/dependencies/
+  cpuRequest: "500m"
+  memoryRequest: "500Mi"
+  multi: "true"
+
+
+hpa:
+  cputhreshold: 400
+  memorythreshold: 300
+  maxreplica: 5
+
+probe:
+   path: "/services/health/check"
+   port: 8021
+   initialDelaySeconds: 30
+   timeoutSeconds: 2
+   periodSeconds: 15
+
+health:
+    path: '/services/health/metrics'
+    port: '8021'
+    scrape: 'true'   
+
+image:
+  registry: gcr.io
+  repository: gcp-gke-cluster-poc/avx-cloud-managedservice
+  tag: 2020.3.0-gcp    
+   

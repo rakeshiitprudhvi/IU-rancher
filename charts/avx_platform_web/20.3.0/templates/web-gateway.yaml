@@ -1,0 +1,101 @@
+{{- $dot := . }}
+{{- range $key, $value := $dot.Values.common.namespace }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: Gateway
+metadata:
+  name: {{ $dot.Values.gateway.appname }}-{{ $value }}
+  namespace: {{ $value }}
+spec:
+  selector:
+    istio: ingressgateway # use istio default controller
+  servers:
+  - port:
+      number: 443
+      name: https
+      protocol: HTTPS
+    tls:
+      mode: {{ $dot.Values.gateway.mode }}
+      credentialName: {{ $dot.Values.gateway.credential }}
+    hosts:
+    - "*"
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: webavx-{{ $value }}
+  namespace: {{ $value }}
+spec:
+  externalTrafficPolicy: Local
+  hosts:
+  - "*"
+  gateways:
+  - web-gateway-{{ $value }}
+  http:
+  - match:
+    - uri:
+        prefix: /avxapi
+    retries:
+        attempts: 3
+        perTryTimeout: 1s
+        retryOn: 5xx
+    route:
+    - destination:
+          host: avx-platform-gateway.{{ $value }}.svc.cluster.local
+          port:
+            number: 5300
+  - match:
+    - uri:
+       prefix: /avxmgr
+    route:
+    - destination:
+         host: avx-platform-gateway.{{ $value }}.svc.cluster.local
+         port:
+           number: 5300
+  - match:
+    - uri:
+        prefix: /appviewx
+    route:
+    - destination:
+        host: avx-platform-web.{{ $value }}.svc.cluster.local
+        port:
+          number: 5004
+  - match:
+    - uri:
+        prefix: /socket.io
+    route:
+    - destination:
+        host: avx-platform-web.{{ $value }}.svc.cluster.local
+        port:
+          number: 5004
+  - match:
+    - uri:
+        prefix: /avxui
+    route:
+    - destination:
+        host: avx-platform-gateway.{{ $value }}.svc.cluster.local
+        port:
+          number: 5300
+  - match:
+    - uri:
+        prefix: /kibana/
+    route:
+    - destination:
+        host: kibana-service.avx.svc.cluster.local
+        port:
+          number: 5601
+  - match:
+    - uri:
+        prefix: /grafana/
+    rewrite:
+      uri: /
+    route:
+    - destination:
+        host: grafana-service.avx.svc.cluster.local
+        port:
+          number: 3000        
+         
+
+{{- end }}
+
+

@@ -1,0 +1,112 @@
+# Commons
+
+common:
+  namespace: 
+    - avx
+  config: avx-common-config
+
+appviewx:
+  create: true
+  moduleconfig: avx-vendors-config
+  replicas: 1
+  registryurl: ""
+  installation_user: "appviewx"
+  installation_user_id: "1000"
+  appviewx_path: "/home/appviewx/appviewx/"
+  appname:
+    - avx-vendors:6701:8021:ClusterIP:20.3.0.0
+  appviewx_plugins:
+    - avx_vendor_a10:20.3.0.0
+    - avx_vendor_akamai:20.3.0.0
+    - avx_vendor_amazonelb:20.3.0.0
+    - avx_vendor_automation:20.3.0.0
+    - avx_vendor_avi:20.3.0.0
+    - avx_vendor_bigiq:20.3.0.0
+    - avx_vendor_cert_adc:20.3.0.0
+    - avx_vendor_cert_ca:20.3.0.0
+    - avx_vendor_cert_cloud:20.3.0.0
+    - avx_vendor_cert_firewall:20.3.0.0
+    - avx_vendor_cert_hsm:20.3.0.0
+    - avx_vendor_cert_mdm:20.3.0.0
+    - avx_vendor_cert_server:20.3.0.0
+    - avx_vendor_cert_waf:20.3.0.0
+    - avx_vendor_cisco_ace:20.3.0.0
+    - avx_vendor_citrix:20.3.0.0
+    - avx_vendor_cloud:20.3.0.0
+    - avx_vendor_dns_bind:20.2.0.0
+    - avx_vendor_dns_infoblox:20.2.0.0
+    - avx_vendor_dns_qip:20.2.0.0
+    - avx_vendor_f5:20.3.0.0
+    - avx_vendor_fortigate:20.3.0.0
+    - avx_vendor_fortimanager:20.3.0.0
+    - avx_vendor_fw_checkpoint:20.3.0.0
+    - avx_vendor_fw_cisco_asa:20.3.0.0
+    - avx_vendor_fwcommon_southbound:20.3.0.0
+    - avx_vendor_fw_f5_afm:20.3.0.0
+    - avx_vendor_fw_juniper:20.3.0.0
+    - avx_vendor_haproxy:20.3.0.0
+    - avx_vendor_infoblox:20.3.0.0
+    - avx_vendor_misc_devices:20.3.0.0
+    - avx_vendor_nginxplus:20.3.0.0
+    - avx_vendor_others:20.3.0.0
+    - avx_vendor_paloalto:20.3.0.0
+    - avx_vendor_panorama:20.3.0.0
+    - avx_vendor_proxy_squid:20.3.0.0
+    - avx_vendor_router_cisco:20.3.0.0
+    - avx_vendor_router_juniper:20.3.0.0
+    - avx_vendor_ssh_aws:20.3.0.0
+    - avx_vendor_ssh_f5:20.3.0.0
+    - avx_vendor_ssh_linux:20.3.0.0
+    - avx_vendor_ssh_windows:20.3.0.0
+    - avx_vendor_switch_arista:20.3.0.0
+    - avx_vendor_switch_cisco:20.3.0.0
+    - avx_vendor_switch_juniper:20.3.0.0
+    - avx_vendor_waf_f5:20.3.0.0
+
+  mountpath: /appviewx/dependencies/
+  cpuRequest: "500m"
+  memoryRequest: "500Mi"
+  multi: "true"
+
+hpa:
+  cputhreshold: 400
+  memorythreshold: 300
+  maxreplica: 5
+
+circuitbreaking:
+   consecutiveErrors: 2
+   interval: 5s
+   baseEjectionTime: 60s 
+   maxEjectionPercent: 100
+   maxreplica: 10
+
+externaljar:
+   f5JarRequired: "false"
+   iControlDownloadCommand: cd /appviewx/dependencies/external_libs/ \
+                && mkdir tempIControl \
+                && cd tempIControl \
+                && wget https://cdn.f5.com/websites/devcentral.f5.com/downloads/iControlAssembly-13_0_0-Java.zip \
+                && unzip iControlAssembly-13_0_0-Java.zip \
+                && cp /appviewx/dependencies/external_libs/tempIControl/lib/iControl-13.0.0.jar /appviewx/dependencies/external_libs/ \
+                && cd .. \
+                && rm -rf tempIControl \
+                && chmod 755 /appviewx/dependencies/external_libs/iControl-13.0.0.jar \
+                &&
+   
+probe:
+   path: "/services/health/check"
+   port: 8021
+   initialDelaySeconds: 30
+   timeoutSeconds: 2
+   periodSeconds: 15
+
+health:
+    path: '/services/health/metrics'
+    port: '8021'
+    scrape: 'true'
+
+image:
+  registry: gcr.io
+  repository: gcp-gke-cluster-poc/avx-cloud-managedservice
+  tag: 2020.3.0-gcp
+

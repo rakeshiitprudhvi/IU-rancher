@@ -1,0 +1,12 @@
+{{- $dot := . }}
+{{- range $key, $value := $dot.Values.common.namespace }}
+{{- $namespace_replica := split ":" $value }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ $dot.Values.appviewx.moduleconfig }}
+  namespace: {{ $namespace_replica._0 }}
+data:
+  MODULE_NAME: {{ $dot.Values.appviewx.moduleconfig }}
+{{- end }}

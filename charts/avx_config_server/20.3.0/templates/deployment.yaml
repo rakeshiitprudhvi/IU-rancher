@@ -1,0 +1,103 @@
+{{- $dot := . }}
+{{ if $dot.Values.appviewx.create -}}
+{{- range .Values.appviewx.appname }}
+{{- $appname_port_version := split ":" . }}
+{{- range $key, $value := $dot.Values.common.namespace }}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    app: {{ $appname_port_version._0 }}
+  name: {{ $appname_port_version._0 }}
+  namespace: {{ $value }}
+spec:
+  ports:
+  - port: {{ $appname_port_version._1 }}
+    protocol: TCP
+    targetPort: {{ $appname_port_version._2 }}
+  selector:
+    app: {{ $appname_port_version._0 }}
+  type: {{ $appname_port_version._3 }}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: {{ $appname_port_version._0 }}
+  name: {{ $appname_port_version._0 }}
+  namespace: {{ $value }}
+spec:
+  replicas: {{$dot.Values.appviewx.replicas}}
+  selector:
+    matchLabels:
+      app: {{ $appname_port_version._0 }}
+  template:
+    metadata:
+      labels:
+        app: {{ $appname_port_version._0 }}
+        version: {{ $appname_port_version._4  | replace "." "-"  }}
+      annotations:
+        timestamp: "{{ $dot.Values.timestamp }}"
+    spec:
+      volumes:
+      - name: logs-pv-storage
+        persistentVolumeClaim:
+          claimName: logs-pv-claim
+      - name: avx-properties-path
+        configMap:
+          name: {{ $dot.Values.common.config }}
+          items:
+          - key: appviewx.properties
+            path: appviewx.properties
+      containers:
+      - image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }} 
+        imagePullPolicy: Always
+        envFrom:
+        # The ConfigMap we want to use
+        - configMapRef:
+            name: {{ $dot.Values.common.config }}
+        - configMapRef:
+            name: {{ $dot.Values.appviewx.moduleconfig }}
+        name: {{ $appname_port_version._0 }}
+        command: ["/bin/sh","-c"]
+        args: ["useradd -u {{ $dot.Values.appviewx.installation_user_id }} {{ $dot.Values.appviewx.installation_user }} \
+                && chown -R {{ $dot.Values.appviewx.installation_user }}:{{ $dot.Values.appviewx.installation_user }} /usr/lib/jvm \
+                && chown -R {{ $dot.Values.appviewx.installation_user }}:{{ $dot.Values.appviewx.installation_user }} /etc/pki/ca-trust/extracted/java \         
+                && chown -R {{ $dot.Values.appviewx.installation_user }}:{{ $dot.Values.appviewx.installation_user }} /etc/pki/java/ \
+                && chmod 777 /etc/pki/ca-trust/extracted/java/cacerts  \
+                && chmod -R 777 ${DEPENDENCY_PATH}/logs/ \
+                && su  {{ $dot.Values.appviewx.installation_user }} -s /bin/bash -c \"java -Xms256m -Xmx2g \
+                  -cp ${DEPENDENCY_PATH}/properties:${DEPENDENCY_PATH}/appviewx_addons/lib/common-libraries/*:${DEPENDENCY_PATH}/appviewx_addons/lib/runtime/*:${DEPENDENCY_PATH}/appviewx_addons/lib/others/*:/appviewx/dependencies/external_libs/*:/appviewx/{{ $appname_port_version._0 | replace "-" "_" }}/{{ $appname_port_version._4 }}/{{ $appname_port_version._0 | replace "-" "_" }}.jar \
+                      -Davx_property_file_path=${DEPENDENCY_PATH}/properties/appviewx.properties \
+                      -Dlog4j.configurationFile=${DEPENDENCY_PATH}/properties/log4j2.xml \
+                      -DpluginName={{ $appname_port_version._0 | replace "-" "_" }} \
+                      -DBOOT_UP_SEQUENCE=migration \
+                      -Dlogfilename=${DEPENDENCY_PATH}/logs/ \
+                      -Davx_logs_home=${DEPENDENCY_PATH}/logs/ \
+                      -Dappviewx.property.path=${DEPENDENCY_PATH}/properties/ \
+                      -DMONGO_ENCRYPTED_PASSWORD=${MONGO_ENCRYPTED_PASSWORD} \
+                      -DMONGO_KEY=${MONGO_KEY} \
+                      -DAPS_MONGO_ENCRYPTED_PASSWORD=${APS_MONGO_ENCRYPTED_PASSWORD} \
+                      -Dtrust_all_cert=true \
+                      -Davx_installation_path=/appviewx/ \
+                      -Dcom.sun.jndi.ldap.object.disableEndpointIdentification=true \
+                      -DKAFKA_URL=${KAFKA_URL} \
+                      -DSKIP_APPSETTINGS_INIT_VALIDATION=true \
+                      -DSLA-STRATEGY=ignore -Dport=8021 -DGW_REF_TIMEOUT:60000 \
+                      -Davx_python_bin_path=${DEPENDENCY_PATH}/appviewx_addons/Python/bin/ \
+                      -Dpython.cachedir.skip=true -Dpython.security.respectJavaAccessibility=false ${JAVA_AGENT_PATH} \
+                      -Ddatacenter=${DATA_CENTER} \
+                      com.appviewx.common.framework.jetty.Main >> ${DEPENDENCY_PATH}/logs/{{ $appname_port_version._0 | replace "-" "_" }}-start.log\"
+                      "]
+        volumeMounts:
+        - mountPath: "{{ $dot.Values.appviewx.mountpath }}/logs"
+          name: logs-pv-storage
+        - name: avx-properties-path
+          mountPath: /appviewx/dependencies/properties/appviewx.properties
+          subPath: appviewx.properties
+      restartPolicy: Always
+
+{{- end }}
+{{- end }}
+{{ end -}}

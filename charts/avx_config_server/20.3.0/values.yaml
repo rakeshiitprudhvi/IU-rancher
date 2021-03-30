@@ -1,0 +1,24 @@
+# Commons
+
+common:
+  namespace: 
+    - avx
+  config: avx-common-config
+
+appviewx:
+  create: true
+  moduleconfig: avx-config-server-config
+  replicas: 1
+  registryurl: ""
+  installation_user: "appviewx"
+  installation_user_id: "1000"
+  appviewx_path: "/home/appviewx/appviewx/"
+  appname: 
+    - avx-config-server:5401:8021:ClusterIP:20.3.0.0
+  mountpath: /appviewx/dependencies/
+
+image:
+  registry: gcr.io
+  repository: gcp-gke-cluster-poc/avx-cloud-managedservice
+  tag: 2020.3.0-gcp
+

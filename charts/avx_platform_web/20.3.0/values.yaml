@@ -1,0 +1,32 @@
+# Commons
+
+common:
+  namespace: 
+    - avx
+  config: avx-common-config
+
+appviewx:
+  create: true
+  moduleconfig: avx-platform-web-config
+  replicas: 1
+  registryurl: ""
+  installation_user: "appviewx"
+  installation_user_id: "1000"  
+  appname: 
+    - avx-platform-web:5004:5004:ClusterIP:20.3.0
+  appviewx_path: "/home/appviewx/appviewx/"
+  websocket: 5555
+  mountpath: /appviewx/dependencies/
+  cpuRequest: "1000m"
+  memoryRequest: "1024Mi"
+  multi: "false"
+
+gateway:
+  appname: web-gateway
+  mode: SIMPLE
+  credential: tls-credential
+
+image:
+  registry: gcr.io
+  repository: gcp-gke-cluster-poc/avx-cloud-web
+  tag: 2020.3.0-gcp

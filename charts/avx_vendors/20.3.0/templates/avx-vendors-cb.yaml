@@ -1,0 +1,19 @@
+{{- $dot := . }}
+{{- range $key, $value := $dot.Values.common.namespace }}
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: avx-vendors-cb
+  namespace: {{ $value }}
+spec:
+  host: avx-vendors
+  trafficPolicy:
+    outlierDetection:
+      consecutiveErrors: {{ $dot.Values.circuitbreaking.consecutiveErrors }}
+      interval: {{ $dot.Values.circuitbreaking.interval }}
+      baseEjectionTime: {{ $dot.Values.circuitbreaking.baseEjectionTime }}
+      maxEjectionPercent: {{ $dot.Values.circuitbreaking.maxEjectionPercent }}
+
+{{- end }}
+

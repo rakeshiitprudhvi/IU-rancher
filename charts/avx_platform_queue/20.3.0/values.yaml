@@ -1,0 +1,39 @@
+# Commons
+
+common:
+  namespace: 
+    - avx
+  config: avx-common-config
+
+appviewx:
+  create: true
+  moduleconfig: avx-platform-queue-config
+  replicas: 1
+  registryurl: ""
+  installation_user: "appviewx"
+  installation_user_id: "1000"
+  appviewx_path: "/home/appviewx/appviewx/"
+  appname: 
+    - avx-platform-queue:5402:8021:ClusterIP:20.3.0.0
+  mountpath: /appviewx/dependencies/
+  cpuRequest: "1000m"
+  memoryRequest: "1024Mi"
+  multi: "true"
+  
+probe:
+   path: "/services/health/check"
+   port: 8021
+   initialDelaySeconds: 30
+   timeoutSeconds: 2
+   periodSeconds: 15
+
+health:
+    path: '/services/health/metrics'
+    port: '8021'
+    scrape: 'true'
+
+image:
+  registry: gcr.io
+  repository: gcp-gke-cluster-poc/avx-cloud-managedservice
+  tag: 2020.3.0-gcp
+
