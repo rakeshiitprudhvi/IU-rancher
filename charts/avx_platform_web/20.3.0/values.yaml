@@ -29,4 +29,4 @@ gateway:
 image:
   registry: gcr.io
   repository: gcp-gke-cluster-poc/avx-cloud-web
-  tag: 2020.3.0-gcp
+  tag: 2020.3.0
