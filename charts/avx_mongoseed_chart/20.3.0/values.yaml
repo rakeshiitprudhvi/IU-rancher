@@ -11,7 +11,7 @@ routerDB:
 appviewx:
   mongodseedname: mongoutil-mongoseed
   mongodusername: admin
-  mongodpassword: mongo-db-password
+  mongodpassword: HkDNqtX8STdZnlFS
   masterNode: "master.onprem.avx.com"
   mongodauth: admin
   mountpath: /appviewx/dependencies/
