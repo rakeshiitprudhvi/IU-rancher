@@ -110,10 +110,6 @@ spec:
             - cp /data/mongodb-keyfile/key /root/key &&
               chmod 0400 /root/key &&
               numactl --interleave=all mongos --port 27017 --bind_ip 0.0.0.0 --configdb {{ `"` }}{{ printf "%s/" ($dot.Values.configDBStoragePV.storageName | lower) }}{{- range $i, $e := until ($dot.Values.configDBStoragePV.replicas | int) }}{{ printf "%s-%d.%s-service.%s.svc.cluster.local:27017" ($dot.Values.configDBStoragePV.storageName | lower) ($i) ($dot.Values.configDBStoragePV.storageName | lower) ($dot.Values.common.namespace) }}{{- if ne $i (sub ($dot.Values.configDBStoragePV.replicas | int) 1) }}{{ printf "," }}{{- end }}{{ end -}}{{`"`}} --clusterAuthMode keyFile --keyFile /root/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-router.log
-          resources:
-            requests:
-              cpu: "{{ $dot.Values.appviewx.cpurequest }}"
-              memory: "{{ $dot.Values.appviewx.memoryrequest }}"
           ports:
             - containerPort: 27017
           volumeMounts:
