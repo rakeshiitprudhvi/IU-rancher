@@ -95,6 +95,10 @@ spec:
           image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}
           command: ["/bin/sh","-c"]
           args: ["cp /data/mongodb-keyfile/key /root/key && chmod 0400 /root/key && numactl --interleave=all mongod --port 27017 --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 --configsvr --replSet {{ $dot.Values.configDBStoragePV.storageName | lower  }} --auth --clusterAuthMode keyFile --keyFile /root/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-configdb.log"]    
+          resources:
+            requests:
+              cpu: 0.25
+              memory: 512Mi
           ports:
             - containerPort: 27017
 
@@ -107,7 +111,7 @@ spec:
                 name: logs-pv-storage
                 
         - name: init-mongo
-          image: gcr.io/appviewxclm/appviewx/mongo-init:2020.3.0
+          image: {{ $dot.Values.mongoBaseImage.registry }}/{{ $dot.Values.mongoBaseImage.repository }}:{{ $dot.Values.mongoBaseImage.tag }}
           imagePullPolicy: IfNotPresent
           command:
           - bash
