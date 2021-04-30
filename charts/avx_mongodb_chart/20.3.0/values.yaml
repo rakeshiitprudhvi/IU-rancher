@@ -41,6 +41,9 @@ routerDB:
 
 appviewx:
   mountpath: /appviewx/dependencies/
+  cpurequest: .10
+  memoryrequest: 128Mi
+  
 
 image:
   registry: docker.io
