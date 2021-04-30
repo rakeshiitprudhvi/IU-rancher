@@ -1,0 +1,4 @@
+istioNamespace: istio-system
+
+istio:
+    multi: "false"    

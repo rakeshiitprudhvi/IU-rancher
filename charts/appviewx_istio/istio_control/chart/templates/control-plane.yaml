@@ -1,0 +1,42 @@
+{{- $dot := . }}
+---
+apiVersion: install.istio.io/v1alpha1
+kind: IstioOperator
+metadata:
+  namespace: {{ .Release.Namespace }}
+  name: istiocontrolplane
+spec:
+  addonComponents:
+    grafana:
+      enabled: true
+    prometheus:
+      enabled: true
+    kiali:
+      enabled: true
+    tracing:
+      enabled: true
+  components:
+    ingressGateways:
+      - name: istio-ingressgateway
+        enabled: true
+        {{- if eq $dot.Values.istio.multi "true" }}
+        k8s:
+          hpaSpec:
+            maxReplicas: 5
+            minReplicas: 3
+          nodeSelector:
+            datacenter: master
+          replicaCount: 3
+        {{- end }}
+  values:
+    gateways:
+      istio-ingressgateway:
+        ports:
+          - name: http
+            port: 80
+          - name: https
+            port: 443
+        type: LoadBalancer
+
+  meshConfig:
+    accessLogFile: /dev/stdout

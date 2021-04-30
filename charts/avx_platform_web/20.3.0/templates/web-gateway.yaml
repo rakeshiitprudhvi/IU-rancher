@@ -76,25 +76,6 @@ spec:
         host: avx-platform-gateway.{{ $value }}.svc.cluster.local
         port:
           number: 5300
-  - match:
-    - uri:
-        prefix: /kibana/
-    route:
-    - destination:
-        host: kibana-service.avx.svc.cluster.local
-        port:
-          number: 5601
-  - match:
-    - uri:
-        prefix: /grafana/
-    rewrite:
-      uri: /
-    route:
-    - destination:
-        host: grafana-service.avx.svc.cluster.local
-        port:
-          number: 3000        
-         
 
 {{- end }}
 
