@@ -101,6 +101,8 @@ spec:
           timeoutSeconds: {{ $dot.Values.probe.timeoutSeconds }}
           periodSeconds: {{ $dot.Values.probe.periodSeconds }}
         resources:
+          limits:
+            memory: 512Mi
           requests:
             memory: {{ $dot.Values.appviewx.memoryRequest }}
         volumeMounts:
