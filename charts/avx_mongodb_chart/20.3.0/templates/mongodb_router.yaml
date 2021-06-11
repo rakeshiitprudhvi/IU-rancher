@@ -88,6 +88,10 @@ spec:
         tier: routers
         replicaset: {{ $dot.Values.routerDB.storageName | lower  }}
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -107,9 +111,8 @@ spec:
           imagePullPolicy: IfNotPresent
           command: ["/bin/sh","-c"]
           args: 
-            - cp /data/mongodb-keyfile/key /root/key &&
-              chmod 0400 /root/key &&
-              numactl --interleave=all mongos --port 27017 --bind_ip 0.0.0.0 --configdb {{ `"` }}{{ printf "%s/" ($dot.Values.configDBStoragePV.storageName | lower) }}{{- range $i, $e := until ($dot.Values.configDBStoragePV.replicas | int) }}{{ printf "%s-%d.%s-service.%s.svc.cluster.local:27017" ($dot.Values.configDBStoragePV.storageName | lower) ($i) ($dot.Values.configDBStoragePV.storageName | lower) ($dot.Values.common.namespace) }}{{- if ne $i (sub ($dot.Values.configDBStoragePV.replicas | int) 1) }}{{ printf "," }}{{- end }}{{ end -}}{{`"`}} --clusterAuthMode keyFile --keyFile /root/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-router.log
+            - chmod 0400 /data/mongodb-keyfile/key &&
+              numactl --interleave=all mongos --port 27017 --bind_ip 0.0.0.0 --configdb {{ `"` }}{{ printf "%s/" ($dot.Values.configDBStoragePV.storageName | lower) }}{{- range $i, $e := until ($dot.Values.configDBStoragePV.replicas | int) }}{{ printf "%s-%d.%s-service.%s.svc.cluster.local:27017" ($dot.Values.configDBStoragePV.storageName | lower) ($i) ($dot.Values.configDBStoragePV.storageName | lower) ($dot.Values.common.namespace) }}{{- if ne $i (sub ($dot.Values.configDBStoragePV.replicas | int) 1) }}{{ printf "," }}{{- end }}{{ end -}}{{`"`}} --clusterAuthMode keyFile --keyFile /data/mongodb-keyfile/key  --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-router.log
           resources:
             requests:
               cpu: 0.25
@@ -121,6 +124,8 @@ spec:
               mountPath: /data/mongodb-keyfile
             - mountPath: "{{ $dot.Values.appviewx.mountpath }}/logs"
               name: logs-pv-storage
+          securityContext:
+            allowPrivilegeEscalation: false
         - name: init-mongo
           image: {{ $dot.Values.mongoBaseImage.registry }}/{{ $dot.Values.mongoBaseImage.repository }}:{{ $dot.Values.mongoBaseImage.tag }}
           imagePullPolicy: IfNotPresent

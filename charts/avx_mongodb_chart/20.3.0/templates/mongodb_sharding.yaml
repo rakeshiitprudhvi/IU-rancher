@@ -85,6 +85,10 @@ spec:
         tier: maindb
         replicaset: {{ . | lower }}
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -103,7 +107,7 @@ spec:
           imagePullPolicy: IfNotPresent
           image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}
           command: ["/bin/sh","-c"]
-          args: ["cp /data/mongodb-keyfile/key /root/key && chmod 0400 /root/key && numactl --interleave=all mongod --port 27017 --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 --shardsvr --replSet {{ . | lower  }} --auth --clusterAuthMode keyFile --keyFile /root/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-shareddb.log"]
+          args: ["chmod 0400 /data/mongodb-keyfile/key && numactl --interleave=all mongod --port 27017 --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 --shardsvr --replSet {{ . | lower  }} --auth --clusterAuthMode keyFile --keyFile /data/mongodb-keyfile/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-shareddb.log"]
           resources:
             requests:
               cpu: 0.25
