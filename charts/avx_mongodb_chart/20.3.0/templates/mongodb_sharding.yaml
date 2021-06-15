@@ -102,6 +102,8 @@ spec:
                   - {{ . | lower }}
               topologyKey: kubernetes.io/hostname
       terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+        - name: avx-docker-secret
       containers:
         - name: {{ . | lower }}-container
           imagePullPolicy: IfNotPresent

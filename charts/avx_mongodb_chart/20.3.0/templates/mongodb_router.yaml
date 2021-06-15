@@ -105,6 +105,8 @@ spec:
                   - {{ $dot.Values.routerDB.storageName | lower  }}
               topologyKey: kubernetes.io/hostname
       terminationGracePeriodSeconds: 10
+      imagePullSecrets:
+        - name: avx-docker-secret
       containers:
         - name: {{ $dot.Values.routerDB.storageName | lower  }}-container
           image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}

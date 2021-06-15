@@ -75,6 +75,10 @@ spec:
         tier: configdb
         replicaset: {{ $dot.Values.configDBStoragePV.storageName | lower  }}
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 3000
+        fsGroup: 2000
       affinity:
         podAntiAffinity:
           preferredDuringSchedulingIgnoredDuringExecution:
@@ -88,7 +92,8 @@ spec:
                   - {{ $dot.Values.configDBStoragePV.storageName | lower  }}
               topologyKey: kubernetes.io/hostname
       terminationGracePeriodSeconds: 10
-
+      imagePullSecrets:
+        - name: avx-docker-secret
       containers:
         - name: {{ $dot.Values.configDBStoragePV.storageName | lower  }}-container
           imagePullPolicy: IfNotPresent
@@ -101,7 +106,6 @@ spec:
               memory: 512Mi
           ports:
             - containerPort: 27017
-
           volumeMounts:
               - name: mongodb-keyfile
                 mountPath: /data/mongodb-keyfile
