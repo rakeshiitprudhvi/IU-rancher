@@ -8,6 +8,8 @@ metadata:
 spec:
   template:
     spec:
+      imagePullSecrets:
+        - name: avx-docker-secret
       containers:
       - name: {{ $dot.Values.appviewx.mongodseedname | lower }}
         imagePullPolicy: IfNotPresent
