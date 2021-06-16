@@ -99,7 +99,7 @@ spec:
           imagePullPolicy: IfNotPresent
           image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}
           command: ["/bin/sh","-c"]
-          args: ["chmod 0400 /data/mongodb-keyfile/key && numactl --interleave=all mongod --port 27017 --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 --configsvr --replSet {{ $dot.Values.configDBStoragePV.storageName | lower  }} --auth --clusterAuthMode keyFile --keyFile /data/mongodb-keyfile/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-configdb.log"]    
+          args: ["cp /data/mongodb-keyfile/key /appviewx/dependencies/logs/ && chmod 400 /appviewx/dependencies//logs/key && numactl --interleave=all mongod --port 27017 --wiredTigerCacheSizeGB 0.25 --bind_ip 0.0.0.0 --configsvr --replSet {{ $dot.Values.configDBStoragePV.storageName | lower  }} --auth --clusterAuthMode keyFile --keyFile /appviewx/dependencies//logs/key --setParameter authenticationMechanisms=SCRAM-SHA-1 --logpath {{ $dot.Values.appviewx.mountpath }}/logs/mongodb-configdb.log"]    
           resources:
             requests:
               cpu: 0.25
