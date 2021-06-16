@@ -1,7 +1,7 @@
 # Commons
 
 common:
-  namespace: default
+  namespace: avx
   config: avx-common-config
   appviewxnamespace: avx
 
