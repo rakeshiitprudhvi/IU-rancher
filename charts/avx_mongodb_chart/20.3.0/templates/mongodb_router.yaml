@@ -26,21 +26,22 @@ data:
 
     if [[ "${HOSTNAME}" == 'mongo-routerdb-0' ]]; then
       # wait for the readiness health check to pass
-      until ping -c 1 mongo-routerdb-0.mongo-routerdb-service; do
-        echo "waiting for DNS (mongo-routerdb-0.mongo-routerdb-service)..."
-        sleep 2
-      done
+      #until ping -c 1 mongo-routerdb-0.mongo-routerdb-service; do
+      #  echo "waiting for DNS (mongo-routerdb-0.mongo-routerdb-service)..."
+      #  sleep 2
+      #done
 
-      # wait until mongo-shareddb-0 DNS is available - this is required to add shard1 to router
-      until ping -c 1 mongo-shareddb-0.mongo-shareddb-service; do
-        echo "waiting for DNS (mongo-shareddb-0.mongo-shareddb-service)..."
-        sleep 2
-      done
+      ## wait until mongo-shareddb-0 DNS is available - this is required to add shard1 to router
+      #until ping -c 1 mongo-shareddb-0.mongo-shareddb-service; do
+      #  echo "waiting for DNS (mongo-shareddb-0.mongo-shareddb-service)..."
+      #  sleep 2
+      #done
 
-      until /usr/bin/mongo --quiet --eval 'db.getMongo()'; do
-        echo "waiting for local shell initiation..."
-        sleep 2
-      done
+      #until /usr/bin/mongo --quiet --eval 'db.getMongo()'; do
+      #  echo "waiting for local shell initiation..."
+      #  sleep 2
+      #done
+      sleep 60
       echo "local shell initiated"
       
       echo "adding sharddb to router"
