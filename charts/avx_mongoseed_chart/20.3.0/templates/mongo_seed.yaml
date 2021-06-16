@@ -15,7 +15,7 @@ spec:
         imagePullPolicy: IfNotPresent
         image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}
         command: ["/bin/bash","-c"]
-        args: ["mongorestore \
+        args: ["sleep 100000000 && mongorestore \
                 --host \
                 {{ $dot.Values.routerDB.service | lower }}-0.{{ $dot.Values.routerDB.service | lower }}-service.{{ $dot.Values.common.appviewxnamespace | lower }}.svc.cluster.local \
                 --username {{ $dot.Values.appviewx.mongodusername }} \
