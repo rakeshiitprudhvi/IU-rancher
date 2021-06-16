@@ -17,7 +17,7 @@ appviewx:
   mountpath: /appviewx/dependencies/
 
 image:
-  registry: gcr.io
-  repository: gcp-gke-cluster-poc/avx-cloud-mongoseed
+  registry: registry.eu.se.com
+  repository: avx-cloud-mongoseed
   tag: 2020.3.0
 
