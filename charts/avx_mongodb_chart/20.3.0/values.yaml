@@ -48,6 +48,6 @@ image:
   tag: 4.2.8
 
 mongoBaseImage:
-  registry: registry.eu.se.com
+  registry: registry.eu.se.com/avx
   repository: mongo-init
   tag: 2020.3.0
