@@ -42,10 +42,15 @@ routerDB:
 appviewx:
   mountpath: /appviewx/dependencies/
 
+#image:
+#  registry: registry.eu.se.com/avx
+#  repository: mongo
+#  tag: 4.2.8
+
 image:
   registry: registry.eu.se.com/avx
-  repository: mongo
-  tag: 4.2.8
+  repository: mongo-init
+  tag: 2020.3.3
 
 mongoBaseImage:
   registry: registry.eu.se.com/avx
