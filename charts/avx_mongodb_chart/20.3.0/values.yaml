@@ -50,4 +50,4 @@ image:
 mongoBaseImage:
   registry: registry.eu.se.com/avx
   repository: mongo-init
-  tag: 2020.3.2
+  tag: 2020.3.3
