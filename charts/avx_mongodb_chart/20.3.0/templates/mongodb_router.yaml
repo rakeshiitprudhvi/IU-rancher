@@ -31,7 +31,7 @@ data:
       #  sleep 2
       #done
 
-      ## wait until mongo-shareddb-0 DNS is available - this is required to add shard1 to router
+      ### wait until mongo-shareddb-0 DNS is available - this is required to add shard1 to router
       #until ping -c 1 mongo-shareddb-0.mongo-shareddb-service; do
       #  echo "waiting for DNS (mongo-shareddb-0.mongo-shareddb-service)..."
       #  sleep 2
@@ -48,10 +48,11 @@ data:
       /usr/bin/mongo --eval='printjson(sh.addShard("mongo-shareddb/mongo-shareddb-0.mongo-shareddb-service.{{ $dot.Values.common.namespace }}.svc.cluster.local:27017"))'
 
       # wait until mongo-configdb-0 DNS is available - required to connect to check primary status
-      until ping -c 1 mongo-configdb-0.mongo-configdb-service; do
-        echo "waiting for DNS (mongo-configdb-0.mongo-configdb-service)..."
-        sleep 2
-      done
+      #until ping -c 1 mongo-configdb-0.mongo-configdb-service; do
+      #  echo "waiting for DNS (mongo-configdb-0.mongo-configdb-service)..."
+      #  sleep 2
+      #done
+      sleep 20
       # wait until primary has been elected for the configdb - this is required for user creation
       HOST=mongo-configdb-0.mongo-configdb-service:27017
       FALSE_VAR="false"
