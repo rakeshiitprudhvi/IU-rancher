@@ -12,21 +12,3 @@ spec:
     requests:
       storage: {{ $dot.Values.appviewx.logsCapacityStorage }}
 
----
-{{- $dot := . }}
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: logs-pv-volume
-  namespace: {{ $dot.Values.common.namespace }}
-  labels:
-    type: local
-spec:
-  storageClassName: manual
-  capacity:
-    storage: {{ $dot.Values.appviewx.logsCapacityStorage }}
-  accessModes:
-    - ReadWriteOnce
-  hostPath:
-    path: "{{ $dot.Values.appviewx.mountpath }}/logs"
-
