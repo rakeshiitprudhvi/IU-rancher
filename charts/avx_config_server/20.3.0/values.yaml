@@ -18,7 +18,7 @@ appviewx:
   mountpath: /appviewx/dependencies/
 
 image:
-  registry: gcr.io
-  repository: gcp-gke-cluster-poc/avx-cloud-managedservice
-  tag: 2020.3.0
+  registry: registry.eu.se.com
+  repository: avx/avx-cloud-managedservice
+  tag: 2020.3.1
 
