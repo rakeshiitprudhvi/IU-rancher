@@ -5,7 +5,7 @@ metadata:
   name: logs-pv-claim
   namespace: {{ $dot.Values.common.namespace }}
 spec:
-  storageClassName: manual
+  storageClassName: efs
   accessModes:
     - ReadWriteOnce
   resources:
