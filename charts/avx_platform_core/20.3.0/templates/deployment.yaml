@@ -53,6 +53,12 @@ spec:
           items:
           - key: appviewx.properties
             path: appviewx.properties
+      imagePullSecrets:
+        - name: avx-docker-secret
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 2000
       containers:
       - image: {{ $dot.Values.image.registry }}/{{ $dot.Values.image.repository }}:{{ $dot.Values.image.tag }}  
         imagePullPolicy: IfNotPresent
@@ -64,13 +70,7 @@ spec:
             name: {{ $dot.Values.appviewx.moduleconfig }}
         name: {{ $appname_port_version._0 }}
         command: ["/bin/sh","-c"]
-        args: ["useradd -u {{ $dot.Values.appviewx.installation_user_id }} {{ $dot.Values.appviewx.installation_user }} \
-                && chown -R {{ $dot.Values.appviewx.installation_user }}:{{ $dot.Values.appviewx.installation_user }} /usr/lib/jvm \
-                && chown -R {{ $dot.Values.appviewx.installation_user }}:{{ $dot.Values.appviewx.installation_user }} /etc/pki/ca-trust/extracted/java \         
-                && chown -R {{ $dot.Values.appviewx.installation_user }}:{{ $dot.Values.appviewx.installation_user }} /etc/pki/java/ \
-                && chmod 777 /etc/pki/ca-trust/extracted/java/cacerts  \
-                && chmod -R 777 ${DEPENDENCY_PATH}/logs/ \
-                && su  {{ $dot.Values.appviewx.installation_user }} -s /bin/bash -c \"java -Xms256m -Xmx2g \
+        args: ["java -Xms256m -Xmx2g \
                   -cp ${DEPENDENCY_PATH}/properties:${DEPENDENCY_PATH}/appviewx_addons/lib/common-libraries/*:${DEPENDENCY_PATH}/appviewx_addons/lib/runtime/*:${DEPENDENCY_PATH}/appviewx_addons/lib/others/*:${DEPENDENCY_PATH}/appviewx_addons/lib/config_client/*:/appviewx/dependencies/external_libs/*:/appviewx/{{ $appname_port_version._0 | replace "-" "_" }}/{{ $appname_port_version._4 }}/{{ $appname_port_version._0 | replace "-" "_" }}.jar \
                       -Davx_property_file_path=${DEPENDENCY_PATH}/properties/appviewx.properties \
                       -Dlog4j.configurationFile=${DEPENDENCY_PATH}/properties/log4j2.xml \
@@ -91,8 +91,7 @@ spec:
                       -Davx_python_bin_path=${DEPENDENCY_PATH}/appviewx_addons/Python/bin/ \
                       -Dpython.cachedir.skip=true -Dpython.security.respectJavaAccessibility=false ${JAVA_AGENT_PATH} \
                       -Ddatacenter=${DATA_CENTER} \
-                      com.appviewx.common.framework.jetty.Main >> ${DEPENDENCY_PATH}/logs/{{ $appname_port_version._0 | replace "-" "_" }}-start.log\"
-                      "]
+                      com.appviewx.common.framework.jetty.Main >> ${DEPENDENCY_PATH}/logs/{{ $appname_port_version._0 | replace "-" "_" }}-start.log"]
         readinessProbe:
           httpGet:
             path: {{ $dot.Values.probe.path }}
